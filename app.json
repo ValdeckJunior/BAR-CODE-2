@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "UB QR Campus",
+    "slug": "ub-qr-campus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "ubqrcampus",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "description": "University of Buea Course Registration QR Code Scanner",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "cm.ub.qrcampus",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "package": "cm.ub.qrcampus",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/qr-campus-logo.png",
+        "backgroundColor": "#F9D915"
+      },
+      "permissions": [
+        "CAMERA",
+        "MEDIA_LIBRARY",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_MEDIA_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/qr-code-campus-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F9D915"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow UB QR Campus to access your camera to scan course QR codes."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow UB QR Campus to save QR codes to your photo library.",
+          "savePhotosPermission": "Allow UB QR Campus to save QR codes to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "be4bf051-e5eb-4a51-b30c-39b193aade9b"
+      }
+    }
+  }
+}
