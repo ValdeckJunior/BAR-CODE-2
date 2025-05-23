@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { Colors } from "@/constants/Colors";
+import { Theme } from "@/constants/Theme";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import {
   setSemesterFilter,
@@ -20,6 +21,7 @@ import {
   setSortBy,
   selectFilteredCourses,
 } from "@/store/slices/courseSlice";
+import { Course } from "@/types";
 
 const ResultsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,7 +30,7 @@ const ResultsScreen = () => {
   const loading = useSelector((state: RootState) => state.courses.loading);
   const user = useSelector((state: RootState) => state.auth.user);
   const filters = useSelector((state: RootState) => state.courses.filters);
-  const courses = useSelector(selectFilteredCourses);
+  const courses = useSelector(selectFilteredCourses) as Course[];
 
   const filteredCourses = courses.filter(
     (course) =>
@@ -48,7 +50,7 @@ const ResultsScreen = () => {
     dispatch(setRegistrationStatusFilter(status));
   };
 
-  const handleSort = (sortBy: "code" | "title" | "credits") => {
+  const handleSort = (sortBy: "code" | "title") => {
     dispatch(
       setSortBy({
         sortBy,
@@ -76,24 +78,15 @@ const ResultsScreen = () => {
     </View>
   );
 
-  const renderCourseItem = ({ item }) => (
+  const renderCourseItem = ({ item }: { item: Course }) => (
     <TouchableOpacity
       style={styles.courseCard}
       onPress={() => handleCoursePress(item.id)}
     >
       <View style={styles.courseHeader}>
         <Text style={styles.courseCode}>{item.code}</Text>
-        {item.isRegistered && (
-          <View style={styles.registeredBadge}>
-            <Text style={styles.registeredText}>Registered</Text>
-          </View>
-        )}
       </View>
       <Text style={styles.courseTitle}>{item.title}</Text>
-      <View style={styles.courseFooter}>
-        <Text style={styles.courseCredits}>{item.credits} credits</Text>
-        <Text style={styles.courseSemester}>{item.semester}</Text>
-      </View>
     </TouchableOpacity>
   );
 
@@ -197,16 +190,6 @@ const ResultsScreen = () => {
                   (filters.sortOrder === "asc" ? "↑" : "↓")}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.filterOption}
-              onPress={() => handleSort("credits")}
-            >
-              <Text>
-                Credits{" "}
-                {filters.sortBy === "credits" &&
-                  (filters.sortOrder === "asc" ? "↑" : "↓")}
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -260,7 +243,7 @@ const ResultsScreen = () => {
       <FlatList
         data={filteredCourses}
         renderItem={renderCourseItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmptyState}
       />
@@ -272,78 +255,86 @@ const ResultsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.light.background,
   },
   centered: {
     justifyContent: "center",
     alignItems: "center",
   },
   searchContainer: {
-    padding: 16,
+    padding: Theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#fff",
+    borderBottomColor: Colors.light.border,
+    backgroundColor: Colors.light.surface,
     flexDirection: "row",
-    gap: 10,
+    gap: Theme.spacing.md,
   },
   searchInput: {
     flex: 1,
-    height: 40,
+    height: 44,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#f9f9f9",
-    fontFamily: "Inter-Regular",
+    borderColor: Colors.light.border,
+    borderRadius: Theme.radius.md,
+    paddingHorizontal: Theme.spacing.md,
+    backgroundColor: Colors.light.background,
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.md,
+    color: Colors.light.text,
   },
   filterButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
+    borderColor: Colors.light.border,
+    borderRadius: Theme.radius.md,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: Colors.light.background,
   },
   listContainer: {
-    padding: 16,
+    padding: Theme.spacing.lg,
     flexGrow: 1,
   },
   courseCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: Colors.light.surface,
+    padding: Theme.spacing.lg,
+    borderRadius: Theme.radius.lg,
     borderWidth: 1,
-    borderColor: "#eee",
-    marginBottom: 12,
+    borderColor: Colors.light.border,
+    marginBottom: Theme.spacing.lg,
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   courseHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: Theme.spacing.sm,
   },
   courseCode: {
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
+    fontFamily: Theme.fontFamily.bold,
+    fontSize: Theme.fontSize.md,
     color: Colors.light.primary,
   },
   registeredBadge: {
     backgroundColor: Colors.light.primary + "20",
-    paddingHorizontal: 8,
+    paddingHorizontal: Theme.spacing.sm,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: Theme.radius.sm,
   },
   registeredText: {
     color: Colors.light.primary,
-    fontSize: 12,
-    fontFamily: "Inter-Bold",
+    fontSize: Theme.fontSize.sm,
+    fontFamily: Theme.fontFamily.bold,
   },
   courseTitle: {
-    fontFamily: "Inter-Regular",
-    fontSize: 14,
-    marginBottom: 8,
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.md,
+    marginBottom: Theme.spacing.sm,
+    color: Colors.light.text,
   },
   courseFooter: {
     flexDirection: "row",
@@ -351,39 +342,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   courseCredits: {
-    fontFamily: "Inter-Regular",
-    fontSize: 12,
-    color: "#666",
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.sm,
+    color: Colors.light.textSecondary,
   },
   courseSemester: {
-    fontFamily: "Inter-Regular",
-    fontSize: 12,
-    color: "#666",
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.sm,
+    color: Colors.light.textSecondary,
   },
   emptyState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: Theme.spacing.xl,
   },
   emptyStateTitle: {
-    fontFamily: "Inter-Bold",
-    fontSize: 18,
-    marginTop: 16,
-    marginBottom: 8,
+    fontFamily: Theme.fontFamily.bold,
+    fontSize: Theme.fontSize.lg,
+    marginTop: Theme.spacing.lg,
+    marginBottom: Theme.spacing.sm,
+    color: Colors.light.text,
   },
   emptyStateSubtitle: {
-    fontFamily: "Inter-Regular",
-    fontSize: 14,
-    color: "#666",
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.md,
+    color: Colors.light.textSecondary,
     textAlign: "center",
   },
   message: {
-    fontFamily: "Inter-Regular",
-    fontSize: 16,
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.md,
     textAlign: "center",
-    color: "#666",
-    marginTop: 20,
+    color: Colors.light.textSecondary,
+    marginTop: Theme.spacing.xl,
   },
   modalContainer: {
     flex: 1,
@@ -391,45 +383,49 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+    backgroundColor: Colors.light.surface,
+    borderTopLeftRadius: Theme.radius.lg,
+    borderTopRightRadius: Theme.radius.lg,
+    padding: Theme.spacing.lg,
     maxHeight: "80%",
   },
   modalTitle: {
-    fontFamily: "Inter-Bold",
-    fontSize: 20,
-    marginBottom: 20,
+    fontFamily: Theme.fontFamily.bold,
+    fontSize: Theme.fontSize.lg,
+    marginBottom: Theme.spacing.lg,
     textAlign: "center",
+    color: Colors.light.primary,
   },
   filterSection: {
-    marginBottom: 20,
+    marginBottom: Theme.spacing.lg,
   },
   filterSectionTitle: {
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
-    marginBottom: 10,
+    fontFamily: Theme.fontFamily.bold,
+    fontSize: Theme.fontSize.md,
+    marginBottom: Theme.spacing.sm,
+    color: Colors.light.text,
   },
   filterOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: "#f9f9f9",
-    marginBottom: 8,
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.lg,
+    borderRadius: Theme.radius.md,
+    backgroundColor: Colors.light.background,
+    marginBottom: Theme.spacing.sm,
   },
   filterOptionSelected: {
     backgroundColor: Colors.light.primary + "20",
   },
   closeButton: {
     backgroundColor: Colors.light.primary,
-    padding: 16,
-    borderRadius: 8,
+    padding: Theme.spacing.md,
+    borderRadius: Theme.radius.md,
     alignItems: "center",
+    marginTop: Theme.spacing.md,
   },
   closeButtonText: {
-    color: "#fff",
-    fontFamily: "Inter-Bold",
+    color: Colors.light.textInverted,
+    fontFamily: Theme.fontFamily.bold,
+    fontSize: Theme.fontSize.md,
   },
 });
 

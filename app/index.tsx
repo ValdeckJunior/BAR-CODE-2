@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Pressable,
 } from "react-native";
 import { router } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,6 +15,7 @@ import { AppDispatch, RootState } from "@/store";
 import { loginUser, restoreAuthState } from "@/store/slices/authSlice";
 import { Colors } from "@/constants/Colors";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import ScanScreen from "./(tabs)/scan";
 
 export default function LoginScreen() {
   const dispatch = useDispatch<AppDispatch>();
@@ -56,9 +56,11 @@ export default function LoginScreen() {
     }
   };
 
-  const handleVerifyCourse = () => {
-    router.push("/(tabs)/scan");
-  };
+  const user = useSelector((state: RootState) => state.auth.user);
+  // If user is a lecturer/invigilator, show only ScanScreen
+  if (user && user.role && user.role.toUpperCase().includes("LECTURER")) {
+    return <ScanScreen />;
+  }
 
   return (
     <View style={styles.container}>
@@ -90,7 +92,7 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               editable={!loading}
             />
-            <Pressable
+            <TouchableOpacity
               style={styles.visibilityToggle}
               onPress={() => setShowPassword(!showPassword)}
             >
@@ -99,7 +101,7 @@ export default function LoginScreen() {
                 size={24}
                 color={Colors.light.textSecondary}
               />
-            </Pressable>
+            </TouchableOpacity>
           </View>
 
           {error && <Text style={styles.errorText}>{error}</Text>}
@@ -114,16 +116,6 @@ export default function LoginScreen() {
             ) : (
               <Text style={styles.buttonText}>Sign in</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: Colors.light.surface }]}
-            onPress={handleVerifyCourse}
-            disabled={loading}
-          >
-            <Text style={styles.verifyButtonText}>
-              Verify course registration
-            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -179,11 +171,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: Colors.light.textInverted,
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
-  },
-  verifyButtonText: {
-    color: Colors.light.text,
     fontFamily: "Inter-Bold",
     fontSize: 16,
   },

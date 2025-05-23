@@ -9,44 +9,20 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Colors } from "@/constants/Colors";
+import { Theme } from "@/constants/Theme";
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { Course } from "@/types";
 
 const CourseDetailsScreen = () => {
   const { id } = useLocalSearchParams();
   const { top } = useSafeAreaInsets();
   const { courses, loading } = useSelector((state: RootState) => state.courses);
-
-  // Mock course data for testing
-  const mockCourses = [
-    {
-      id: "CEF305",
-      code: "CEF305",
-      title: "Software Engineering",
-      credits: 6,
-      isRegistered: true,
-      semester: "SEMESTER 1",
-      lecturer: "Dr. Nkongho",
-      department: "Software Engineering",
-    },
-    {
-      id: "CEF307",
-      code: "CEF307",
-      title: "Mobile Development",
-      credits: 4,
-      isRegistered: false,
-      semester: "SEMESTER 1",
-      lecturer: "Dr. Akoung",
-      department: "Software Engineering",
-    },
-  ];
-
-  // Use mock data if courses is null/empty
-  const safeCourses =
-    Array.isArray(courses) && courses.length > 0 ? courses : mockCourses;
-  const course = safeCourses.find((c) => c.id === id);
+  const course = Array.isArray(courses)
+    ? courses.find((c: Course) => c.id == id)
+    : null;
 
   if (loading) {
     return (
@@ -72,46 +48,15 @@ const CourseDetailsScreen = () => {
           <Text style={styles.courseCode}>{course.code}</Text>
           <Text style={styles.courseTitle}>{course.title}</Text>
         </View>
-
-        <View style={styles.content}>
-          <DetailItem label="Credits" value={`${course.credits} credits`} />
-          <DetailItem label="Semester" value={course.semester} />
-          <DetailItem label="Lecturer" value={course.lecturer} />
-          <DetailItem label="Department" value={course.department} />
-          <DetailItem
-            label="Registration Status"
-            value={course.isRegistered ? "Registered" : "Not Registered"}
-            valueStyle={
-              course.isRegistered
-                ? styles.registeredText
-                : styles.notRegisteredText
-            }
-          />
-        </View>
       </ScrollView>
     </SafeAreaProvider>
   );
 };
 
-const DetailItem = ({
-  label,
-  value,
-  valueStyle,
-}: {
-  label: string;
-  value: string;
-  valueStyle?: any;
-}) => (
-  <View style={styles.detailItem}>
-    <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={[styles.detailValue, valueStyle]}>{value}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.light.background,
   },
   centered: {
     flex: 1,
@@ -119,49 +64,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   header: {
-    padding: 20,
+    padding: Theme.spacing.lg,
     backgroundColor: Colors.light.primary,
+    borderBottomLeftRadius: Theme.radius.lg,
+    borderBottomRightRadius: Theme.radius.lg,
+    marginBottom: Theme.spacing.lg,
+    alignItems: "center",
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
   },
   courseCode: {
-    fontFamily: "Inter-Bold",
-    fontSize: 24,
-    color: "#fff",
-    marginBottom: 8,
+    fontFamily: Theme.fontFamily.bold,
+    fontSize: Theme.fontSize.lg,
+    color: Colors.light.textInverted,
+    marginBottom: Theme.spacing.xs,
+    letterSpacing: 1,
   },
   courseTitle: {
-    fontFamily: "Inter-Regular",
-    fontSize: 18,
-    color: "#fff",
-  },
-  content: {
-    padding: 20,
-  },
-  detailItem: {
-    marginBottom: 20,
-  },
-  detailLabel: {
-    fontFamily: "Inter-Regular",
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
-    color: "#000",
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.md,
+    color: Colors.light.textInverted,
+    marginBottom: Theme.spacing.sm,
+    textAlign: "center",
   },
   message: {
-    fontFamily: "Inter-Regular",
-    fontSize: 16,
+    fontFamily: Theme.fontFamily.regular,
+    fontSize: Theme.fontSize.md,
     textAlign: "center",
-    color: "#666",
-    marginTop: 20,
-  },
-  registeredText: {
-    color: Colors.light.primary,
-  },
-  notRegisteredText: {
-    color: "#ff4444",
+    color: Colors.light.textSecondary,
+    marginTop: Theme.spacing.lg,
   },
 });
 

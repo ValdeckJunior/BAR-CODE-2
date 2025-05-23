@@ -25,6 +25,7 @@ export default function TabLayout() {
           fontFamily: "Inter-Regular",
           fontSize: 12,
         },
+        headerTitleAlign: "center",
       }}
     >
       <Tabs.Screen
@@ -48,13 +49,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="results"
+        name="logs"
         options={{
-          title: "Courses",
+          title: "Logs",
           tabBarIcon: ({ color }) => (
-            <IconSymbol name="doc.text.fill" color={color} size={24} />
+            <IconSymbol name="clock.fill" color={color} size={24} />
           ),
-          headerTitle: "My Courses",
+          headerTitle: "Scan History",
         }}
       />
       <Tabs.Screen
@@ -64,9 +65,10 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol name="person.fill" color={color} size={24} />
           ),
-          headerShown: false,
+          // headerShown: false,
         }}
       />
+      <Tabs.Screen name="results" options={{ href: null }} />
     </Tabs>
   );
 }

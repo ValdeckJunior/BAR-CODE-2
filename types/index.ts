@@ -1,23 +1,20 @@
 export interface Course {
-  id: string;
+  id: number;
   code: string;
   title: string;
-  credits: number;
-  isRegistered: boolean;
-  semester: "SEMESTER 1" | "SEMESTER 2";
-  lecturer: string;
-  department: string;
 }
 
 export interface User {
-  matricule: string;
+  id: number;
   name: string;
+  matricule: string;
+  email: string;
+  role: "STUDENT" | "LECTURER" | string;
+  faculty: string;
   department: string;
-  semester: "SEMESTER 1" | "SEMESTER 2";
+  semester: string; // e.g., "SEMESTER 2"
+  level: string; // e.g., "LEVEL 300"
   academicYear: string;
-  level: "LEVEL 200" | "LEVEL 300" | "LEVEL 400";
-  courses: Course[];
-  qrCode?: string;
 }
 
 export interface AuthState {
@@ -26,6 +23,10 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   token: string | null;
+  qrCodeImage?: string | null;
+  verificationResult?: any | null;
+  verificationLoading?: boolean;
+  verificationError?: string | null;
 }
 
 export interface CourseState {
@@ -35,37 +36,17 @@ export interface CourseState {
   filters: {
     semester: "SEMESTER 1" | "SEMESTER 2" | null;
     registrationStatus: "all" | "registered" | "unregistered";
-    sortBy: "code" | "title" | "credits";
+    sortBy: "code" | "title";
     sortOrder: "asc" | "desc";
   };
 }
 
-export type QRCodeType = "student-id" | "course-registration";
-
-export interface BaseQRData {
-  type: QRCodeType;
-}
-
-export interface StudentIDQRData extends BaseQRData {
-  type: "student-id";
+// QR code payload as per backend
+export interface StudentQRCodePayload {
   matricule: string;
-  name: string;
-  semester: "SEMESTER 1" | "SEMESTER 2";
   academicYear: string;
-  department: string;
-  level: string;
-  courses: Course[];
-}
-
-export interface CourseRegistrationQRData extends BaseQRData {
-  type: "course-registration";
-  id: string;
-  code: string;
-  title: string;
-  credits: number;
-  semester: "SEMESTER 1" | "SEMESTER 2";
-  department: string;
-  lecturer: string;
+  semester: string;
+  courses: string[];
 }
 
 export interface PendingScan {

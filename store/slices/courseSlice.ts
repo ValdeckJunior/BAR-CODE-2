@@ -3,48 +3,7 @@ import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { Course, CourseState } from "@/types";
 
 const initialState: CourseState = {
-  courses: [
-    {
-      id: "CEF305",
-      code: "CEF305",
-      title: "Software Engineering",
-      credits: 6,
-      isRegistered: true,
-      semester: "SEMESTER 1",
-      lecturer: "Dr. Nkongho",
-      department: "Software Engineering",
-    },
-    {
-      id: "CEF307",
-      code: "CEF307",
-      title: "Mobile Development",
-      credits: 4,
-      isRegistered: true,
-      semester: "SEMESTER 1",
-      lecturer: "Dr. Akoung",
-      department: "Software Engineering",
-    },
-    {
-      id: "CEF303",
-      code: "CEF303",
-      title: "Database Systems",
-      credits: 5,
-      isRegistered: false,
-      semester: "SEMESTER 1",
-      lecturer: "Dr. Neba",
-      department: "Software Engineering",
-    },
-    {
-      id: "CEF302",
-      code: "CEF302",
-      title: "Operating Systems",
-      credits: 5,
-      isRegistered: false,
-      semester: "SEMESTER 2",
-      lecturer: "Dr. Taka",
-      department: "Software Engineering",
-    },
-  ],
+  courses: [],
   loading: false,
   error: null,
   filters: {
@@ -65,6 +24,29 @@ export const persistCourses = createAsyncThunk(
   async (courses: Course[]) => {
     await storage.saveData(STORAGE_KEYS.COURSES, courses);
     return courses;
+  }
+);
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+export const fetchStudentCourses = createAsyncThunk(
+  "courses/fetchStudentCourses",
+  async (
+    { matricule, token }: { matricule: string; token: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await fetch(`${API_URL}/api/students/${matricule}/courses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to fetch courses");
+      }
+      return await res.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch courses");
+    }
   }
 );
 
@@ -130,6 +112,9 @@ const courseSlice = createSlice({
       state.filters.sortBy = action.payload.sortBy;
       state.filters.sortOrder = action.payload.sortOrder;
     },
+    clearCourses: (state) => {
+      state.courses = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -146,6 +131,18 @@ const courseSlice = createSlice({
       })
       .addCase(persistCourses.rejected, (state) => {
         state.error = "Failed to save courses";
+      })
+      .addCase(fetchStudentCourses.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStudentCourses.fulfilled, (state, action) => {
+        state.courses = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchStudentCourses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -159,6 +156,7 @@ export const {
   setSemesterFilter,
   setRegistrationStatusFilter,
   setSortBy,
+  clearCourses,
 } = courseSlice.actions;
 
 export const selectFilteredCourses = (state: { courses: CourseState }) => {

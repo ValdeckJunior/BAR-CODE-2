@@ -2,69 +2,42 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { User, AuthState } from "@/types";
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   loading: false,
   error: null,
   token: null,
-};
-
-// Mock authentication service - replace with actual API calls
-const mockAuth = {
-  login: async (matricule: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (matricule === "FE20A001" && password === "password123") {
-      return {
-        token: "mock_jwt_token",
-        user: {
-          matricule: "FE20A001",
-          name: "John Nde",
-          department: "Software Engineering",
-          semester: "SEMESTER 1",
-          level: "LEVEL 300",
-          academicYear: "2024-2025",
-          courses: [
-            {
-              id: "CEF305",
-              code: "CEF305",
-              title: "Software Engineering",
-              credits: 6,
-              isRegistered: true,
-              semester: "SEMESTER 1",
-              lecturer: "Dr. Nkongho",
-              department: "Software Engineering",
-            },
-            {
-              id: "CEF307",
-              code: "CEF307",
-              title: "Mobile Development",
-              credits: 4,
-              isRegistered: true,
-              semester: "SEMESTER 1",
-              lecturer: "Dr. Akoung",
-              department: "Software Engineering",
-            },
-          ],
-        },
-      };
-    }
-    throw new Error("Invalid credentials");
-  },
+  qrCodeImage: null, // Add this to store the QR code image (base64 or blob url)
+  verificationResult: null,
+  verificationLoading: false,
+  verificationError: null,
 };
 
 export const loginUser = createAsyncThunk(
-  "auth/login",
-  async ({ matricule, password }: { matricule: string; password: string }) => {
+  "auth/loginUser",
+  async (
+    { matricule, password }: { matricule: string; password: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await mockAuth.login(matricule, password);
-      await storage.saveData(STORAGE_KEYS.TOKEN, response.token);
-      await storage.saveData(STORAGE_KEYS.USER, response.user);
-      return response;
-    } catch (error) {
-      throw error;
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matricule, password }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Login failed");
+      }
+      const data = await res.json();
+      await storage.saveData(STORAGE_KEYS.TOKEN, data.token);
+      await storage.saveData(STORAGE_KEYS.USER, data.user);
+      return { token: data.token, user: data.user };
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Login failed");
     }
   }
 );
@@ -81,9 +54,63 @@ export const restoreAuthState = createAsyncThunk("auth/restore", async () => {
   throw new Error("No auth state to restore");
 });
 
-export const logoutUser = createAsyncThunk("auth/logout", async () => {
-  await storage.clearAllData();
-});
+export const fetchStudentQRCode = createAsyncThunk(
+  "auth/fetchStudentQRCode",
+  async (
+    { matricule, token }: { matricule: string; token: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await fetch(`${API_URL}/api/students/${matricule}/qrcode`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch QR code");
+      const blob = await res.blob();
+      // Convert blob to base64 for React Native Image
+      const reader = new FileReader();
+      return await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch QR code");
+    }
+  }
+);
+
+// Async thunk for verifying QR code (lecturer flow)
+export const verifyQRCode = createAsyncThunk(
+  "auth/verifyQRCode",
+  async (
+    {
+      qrcode,
+      courseCode,
+      token,
+    }: { qrcode: string; courseCode: string; token: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await fetch(`${API_URL}/api/verify-qrcode`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ qrcode, courseCode }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Verification failed");
+      }
+      return await res.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Verification failed");
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -96,6 +123,19 @@ const authSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
+    },
+    logoutUser(state) {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.token = null;
+      state.qrCodeImage = null;
+      storage.removeData(STORAGE_KEYS.TOKEN);
+      storage.removeData(STORAGE_KEYS.USER);
+    },
+    clearVerificationResult(state) {
+      state.verificationResult = null;
+      state.verificationError = null;
+      state.verificationLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -112,7 +152,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Login failed";
+        state.error = action.payload as string;
       })
       .addCase(restoreAuthState.fulfilled, (state, action) => {
         state.user = action.payload.user;
@@ -124,14 +164,30 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
       })
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
-        state.error = null;
+      .addCase(fetchStudentQRCode.fulfilled, (state, action) => {
+        state.qrCodeImage = action.payload;
+      })
+      .addCase(fetchStudentQRCode.rejected, (state, action) => {
+        state.qrCodeImage = null;
+        state.error = action.payload as string;
+      })
+      .addCase(verifyQRCode.pending, (state) => {
+        state.verificationLoading = true;
+        state.verificationError = null;
+        state.verificationResult = null;
+      })
+      .addCase(verifyQRCode.fulfilled, (state, action) => {
+        state.verificationLoading = false;
+        state.verificationResult = action.payload;
+      })
+      .addCase(verifyQRCode.rejected, (state, action) => {
+        state.verificationLoading = false;
+        state.verificationError = action.payload as string;
+        state.verificationResult = null;
       });
   },
 });
 
-export const { setUser, setError } = authSlice.actions;
+export const { setUser, setError, logoutUser, clearVerificationResult } =
+  authSlice.actions;
 export default authSlice.reducer;

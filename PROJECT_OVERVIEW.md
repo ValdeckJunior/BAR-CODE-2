@@ -136,15 +136,18 @@ This document provides a comprehensive overview of the QR Campus frontend applic
 ## 12. Special Notes on User Accounts & Lecturer Flow
 
 ### Pre-Provisioned Student Accounts
+
 - All student accounts are pre-created and imported from the university's main app (mocked for now, as there is no official API yet).
 - Each student account comes with courses already assigned based on semester and academic year.
 - No student self-registration; all data is managed centrally and synced to the frontend.
 
 ### Home Screen (Student)
+
 - After login, students immediately see their personal QR code, which encodes their identity and registered courses.
 - The QR code is ready for download and can be used for verification or attendance.
 
 ### Lecturer/Staff Scan Flow
+
 - On the login screen, lecturers can access a scan button to scan student QR codes.
 - Scanning a QR code retrieves the student's registered courses and details for verification or attendance purposes.
 - This flow is designed for staff/lecturers to quickly verify student enrollment in specific courses or events.
