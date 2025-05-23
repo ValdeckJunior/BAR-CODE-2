@@ -19,6 +19,7 @@ const MAPPING = {
   "doc.text.fill": "edit-document",
   eye: "visibility",
   "eye.slash": "visibility-off",
+  "clock.fill": "history",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],

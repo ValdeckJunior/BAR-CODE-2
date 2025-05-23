@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { storage, STORAGE_KEYS } from "@/utils/storage";
+import { storage } from "@/utils/storage";
+import { STORAGE_KEYS } from "@/constants/StorageKeys";
 import { User, AuthState } from "@/types";
+import { login, logout } from "@/utils/services/auth.service";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -17,28 +19,12 @@ const initialState: AuthState = {
 };
 
 export const loginUser = createAsyncThunk(
-  "auth/loginUser",
-  async (
-    { matricule, password }: { matricule: string; password: string },
-    { rejectWithValue }
-  ) => {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matricule, password }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Login failed");
-      }
-      const data = await res.json();
-      await storage.saveData(STORAGE_KEYS.TOKEN, data.token);
-      await storage.saveData(STORAGE_KEYS.USER, data.user);
-      return { token: data.token, user: data.user };
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Login failed");
-    }
+  "auth/login",
+  async (credentials: { matricule: string; password: string }) => {
+    const response = await login(credentials);
+    await storage.saveData(STORAGE_KEYS.TOKEN, response.token);
+    await storage.saveData(STORAGE_KEYS.USER, response.user);
+    return response;
   }
 );
 
@@ -112,30 +98,30 @@ export const verifyQRCode = createAsyncThunk(
   }
 );
 
+export const logoutUser = createAsyncThunk(
+  "auth/logout",
+  async (_, { getState }) => {
+    const state = getState() as { auth: { token: string | null } };
+    if (state.auth.token) {
+      await logout(state.auth.token);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User>) => {
+    setUser: (state, action) => {
       state.user = action.payload;
-      state.isAuthenticated = true;
-      state.error = null;
+      state.isAuthenticated = !!action.payload;
     },
-    setError: (state, action: PayloadAction<string | null>) => {
+    setError: (state, action) => {
       state.error = action.payload;
     },
-    logoutUser(state) {
-      state.user = null;
-      state.isAuthenticated = false;
-      state.token = null;
-      state.qrCodeImage = null;
-      storage.removeData(STORAGE_KEYS.TOKEN);
-      storage.removeData(STORAGE_KEYS.USER);
-    },
-    clearVerificationResult(state) {
+    clearVerificationResult: (state) => {
       state.verificationResult = null;
       state.verificationError = null;
-      state.verificationLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -146,13 +132,14 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.error.message || "Login failed";
       })
       .addCase(restoreAuthState.fulfilled, (state, action) => {
         state.user = action.payload.user;
@@ -184,10 +171,27 @@ const authSlice = createSlice({
         state.verificationLoading = false;
         state.verificationError = action.payload as string;
         state.verificationResult = null;
+      })
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.qrCodeImage = null;
+        state.loading = false;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        // Even if the server request fails, we still want to clear the local state
+        state.user = null;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.qrCodeImage = null;
+        state.loading = false;
       });
   },
 });
 
-export const { setUser, setError, logoutUser, clearVerificationResult } =
-  authSlice.actions;
+export const { setUser, setError, clearVerificationResult } = authSlice.actions;
 export default authSlice.reducer;

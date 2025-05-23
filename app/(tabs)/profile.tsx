@@ -6,13 +6,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/store";
+import { RootState, AppDispatch } from "@/store";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { User } from "@/types";
@@ -24,13 +25,25 @@ const Profile = () => {
     (state: RootState) => state.auth.user
   ) as User | null;
   const loading = useSelector((state: RootState) => state.auth.loading);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/");
     }
   }, [user, loading]);
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+    } catch (error) {
+      Alert.alert(
+        "Logout Error",
+        "Failed to logout properly. You may need to log in again."
+      );
+    }
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -94,10 +107,24 @@ const Profile = () => {
           </View>
           <TouchableOpacity
             style={styles.logoutCardButton}
-            onPress={() => dispatch(logoutUser())}
+            onPress={handleLogout}
+            disabled={loading}
           >
-            <Text style={styles.logoutCardButtonText}>Logout</Text>
+            {loading ? (
+              <ActivityIndicator
+                color={Colors.light.textInverted}
+                size="small"
+              />
+            ) : (
+              <Text style={styles.logoutCardButtonText}>Logout</Text>
+            )}
           </TouchableOpacity>
+          {/* <TouchableOpacity
+            style={styles.logoutCardButton}
+            onPress={() => router.push("/(tabs)/logs")}
+          >
+            <Text style={styles.logoutCardButtonText}>Go to logs</Text>
+          </TouchableOpacity> */}
         </View>
       </View>
     </SafeAreaProvider>
